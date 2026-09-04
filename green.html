@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pouch Checklist</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F5F5F7;
+    --surface:#FFFFFF;
+    --ink:#1D1D1F;
+    --muted:#575A5E;
+    --line:#E3E3E6;
+    --g1:#22A45D; --g2:#0E8F7E;      /* display gradient, overridden below */
+    --b1:#0E7A62; --b2:#0B6F55;      /* button gradient: darker, AA with white text */
+    --tint:#0E8F7E;
+    --r-card:18px;
+    --r-ctl:12px;
+    --r-pill:980px;
+  }
+  body[data-pouch="green"]{--g1:#2FB463;--g2:#0E8F7E;--tint:#0B6F55;--b1:#0E7A62;--b2:#0B6F55}
+  body[data-pouch="red"]{--g1:#FF4E64;--g2:#F0662B;--tint:#B32032;--b1:#C2263A;--b2:#A8401A}
+  body[data-pouch="blue"]{--g1:#3B8CFF;--g2:#6659E8;--tint:#1B4FA8;--b1:#1F5FC4;--b2:#4B3FBE}
+
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0;min-height:100dvh;background:var(--bg);color:var(--ink);
+    font-family:Inter,-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;
+    font-size:17px;line-height:1.47;letter-spacing:-.011em;
+    font-variant-numeric:tabular-nums;
+    padding-bottom:4rem;
+  }
+  .wrap{max-width:61.25rem;margin:0 auto;padding:0 1.375rem}
+
+
+  /* ---------- hero ---------- */
+  .hero{text-align:center;padding:4.25rem 0 2.5rem}
+  .hero h1{
+    margin:0;font-weight:700;letter-spacing:-.035em;line-height:1.03;
+    font-size:clamp(2.75rem,11vw,4.5rem);
+    color:var(--tint);
+    background:linear-gradient(96deg,var(--g1),var(--g2));
+    -webkit-background-clip:text;background-clip:text;
+    -webkit-text-fill-color:transparent;
+    text-wrap:balance;
+  }
+  .hero p{
+    margin:.85rem auto 0;max-width:34ch;color:var(--muted);
+    font-size:1.0625rem;text-wrap:pretty;
+  }
+
+  /* ---------- cards ---------- */
+  main{display:block}
+  @media (min-width:1024px){
+    .cols{display:grid;grid-template-columns:minmax(0,1.08fr) minmax(0,1fr);
+          column-gap:1.25rem;align-items:start}
+    #secList{grid-column:1;grid-row:1 / span 3}
+    #secDest{grid-column:2;grid-row:1}
+    #secContacts{grid-column:2;grid-row:2}
+    #secNotes{grid-column:2;grid-row:3}
+  }
+  section{
+    background:var(--surface);border-radius:var(--r-card);
+    padding:1.5rem 1.35rem;margin-bottom:1.25rem;
+  }
+  h2{font-size:1.375rem;font-weight:600;letter-spacing:-.021em;margin:0 0 .2rem;text-wrap:balance}
+  .hint{font-size:.9375rem;color:var(--muted);margin:0 0 1.1rem;max-width:56ch;text-wrap:pretty}
+  .fieldlabel{display:block;font-size:.8125rem;font-weight:500;color:var(--muted);margin:0 0 .35rem}
+
+  /* ---------- checklist ---------- */
+  .progress{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-bottom:.55rem}
+  .count{font-size:.9375rem;color:var(--muted)}
+  .bar-track{height:5px;background:var(--line);border-radius:var(--r-pill);overflow:hidden;margin-bottom:1.1rem}
+  .bar-track i{display:block;height:100%;width:0;border-radius:var(--r-pill);
+               background:linear-gradient(90deg,var(--g1),var(--g2));transition:width .3s ease}
+
+  ul{list-style:none;margin:0;padding:0}
+  li.item{
+    display:flex;align-items:center;gap:.85rem;min-height:48px;
+    padding:.55rem 0;border-bottom:1px solid var(--line);
+  }
+  li.item:last-child{border-bottom:0}
+  li.item .box{
+    flex:0 0 auto;width:26px;height:26px;border-radius:50%;
+    border:1.5px solid #C4C4C8;background:transparent;cursor:pointer;padding:0;
+    display:flex;align-items:center;justify-content:center;transition:background .15s,border-color .15s;
+  }
+  li.item .box svg{width:13px;height:13px;stroke:#fff;stroke-width:3.2;fill:none;opacity:0}
+  li.item.done .box{background:linear-gradient(135deg,var(--b1),var(--b2));border-color:transparent}
+  li.item.done .box svg{opacity:1}
+  li.item .label{flex:1;cursor:pointer;font-size:1rem}
+  li.item.done .label{color:var(--muted);text-decoration:line-through}
+  li.item .x{background:none;border:0;color:#A6A6AA;font-size:1.3rem;line-height:1;
+             padding:.3rem .35rem;cursor:pointer;font-family:inherit;border-radius:50%}
+  li.item .x:hover,li.item .x:focus{color:#B32032;background:var(--bg)}
+
+  /* ---------- controls ---------- */
+  .addrow{display:flex;gap:.55rem}
+  input[type=text],input[type=tel],select,textarea{
+    font-family:inherit;font-size:1rem;color:var(--ink);width:100%;
+    background:var(--bg);border:1px solid transparent;border-radius:var(--r-ctl);
+    padding:.7rem .85rem;
+  }
+  input:focus,select:focus,textarea:focus{border-color:var(--tint);outline:none;background:var(--surface)}
+  ::placeholder{color:#6B6E72}
+  textarea{min-height:8rem;resize:vertical;line-height:1.55}
+  select{
+    appearance:none;font-weight:500;cursor:pointer;
+    background-image:url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23575A5E' stroke-width='1.8' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right .85rem center;background-size:12px;
+    padding-right:2.2rem;
+  }
+  .btn{
+    font-family:inherit;font-size:.9375rem;font-weight:500;cursor:pointer;white-space:nowrap;
+    border:0;border-radius:var(--r-pill);padding:.7rem 1.15rem;
+    background:linear-gradient(120deg,var(--b1),var(--b2));color:#fff;
+  }
+  .btn:active{transform:scale(.975)}
+  .btn.ghost{background:none;color:var(--tint);border:1px solid var(--line);font-weight:500}
+  .btn.ghost:hover{background:var(--bg)}
+
+  /* ---------- emergency ---------- */
+  .calls{margin:0;padding:0;list-style:none}
+  .calls a{
+    display:flex;align-items:center;justify-content:space-between;gap:1rem;
+    text-decoration:none;color:var(--ink);
+    padding:.85rem 0;border-bottom:1px solid var(--line);
+  }
+  .calls li:last-child a{border-bottom:0}
+  .calls .who{display:block;font-weight:500;font-size:1rem}
+  .calls .what{font-size:.8125rem;color:var(--muted)}
+  .calls .num{font-size:1.5rem;font-weight:600;letter-spacing:-.02em;color:var(--tint)}
+  .note{
+    font-size:.875rem;color:var(--muted);background:var(--bg);
+    border-radius:var(--r-ctl);padding:.8rem .9rem;margin:1rem 0 0;text-wrap:pretty;
+  }
+  .saved{font-size:.8125rem;color:var(--muted);min-height:1.1rem;margin:.7rem 0 0}
+
+  footer{
+    text-align:center;color:var(--muted);font-size:.8125rem;
+    padding:1.75rem 0 0;display:flex;flex-direction:column;align-items:center;gap:.9rem;
+  }
+  :focus-visible{outline:3px solid var(--tint);outline-offset:2px;border-radius:4px}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+  @media print{
+    .addrow,.x,.btn,footer{display:none!important}
+    body{background:#fff;padding:0}
+    section{border:1px solid #ccc;margin-bottom:1rem;break-inside:avoid}
+    .hero h1{-webkit-text-fill-color:#000;color:#000;background:none;font-size:2rem}
+  }
+</style>
+</head>
+<body data-pouch="green">
+
+<div class="wrap">
+
+  <header class="hero">
+    <h1 id="pouchName">Personal hygiene</h1>
+    <p id="pouchDesc">Everything you keep on you for a clean, comfortable trip.</p>
+  </header>
+
+  <main class="cols">
+
+  <section id="secList">
+    <h2 id="listTitle">Packing checklist</h2>
+    <p class="hint">Tap an item once it's inside the pouch. Your ticks stay on this phone.</p>
+    <div class="progress">
+      <span class="count" id="count">0 of 0 packed</span>
+      <button class="btn ghost" id="reset" style="padding:.4rem .8rem;font-size:.8125rem">Clear ticks</button>
+    </div>
+    <div class="bar-track"><i id="barFill"></i></div>
+    <ul id="list"></ul>
+    <div style="margin-top:1.2rem">
+      <label class="fieldlabel" for="newItem">Add your own item</label>
+      <div class="addrow">
+        <input type="text" id="newItem" placeholder="e.g. contact lens solution" autocomplete="off">
+        <button class="btn" id="addItem">Add</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="secDest">
+    <h2>Where are you going?</h2>
+    <p class="hint">Pick your destination and the numbers below change with it.</p>
+    <label class="fieldlabel" for="dest">Destination</label>
+    <select id="dest"></select>
+    <ul class="calls" id="calls" style="margin-top:1rem"></ul>
+    <p class="note" id="destNote"></p>
+  </section>
+
+  <section id="secContacts">
+    <h2>My emergency contacts</h2>
+    <p class="hint">Family, hotel, tour guide, insurance — whoever should be called first.</p>
+    <div class="addrow" style="align-items:flex-end">
+      <div style="flex:1.1">
+        <label class="fieldlabel" for="cName">Name</label>
+        <input type="text" id="cName" placeholder="e.g. Mama" autocomplete="off">
+      </div>
+      <div style="flex:1">
+        <label class="fieldlabel" for="cNum">Number</label>
+        <input type="tel" id="cNum" placeholder="+63…" autocomplete="off">
+      </div>
+      <button class="btn" id="addContact">Add</button>
+    </div>
+    <ul class="calls" id="contactCalls" style="margin-top:.6rem"></ul>
+  </section>
+
+  <section id="secNotes">
+    <h2>Notes</h2>
+    <p class="hint">Flight number, hotel address, allergies, blood type — anything you'd hate to forget.</p>
+    <label class="fieldlabel" for="notes">Your notes</label>
+    <textarea id="notes"></textarea>
+    <p class="saved" id="saved" role="status"></p>
+  </section>
+
+  </main>
+
+  <footer>
+    <span>WANDERCARE &bull; Essential Travel Safety & Emergency Essentials</span>
+  </footer>
+</div>
+
+<script>
+/* ---------------- storage (falls back to memory if blocked) ---------------- */
+var mem = {};
+var store = {
+  get: function(k){ try{ var v = localStorage.getItem(k); return v===null?(k in mem?mem[k]:null):v; }catch(e){ return (k in mem)?mem[k]:null; } },
+  set: function(k,v){ mem[k]=v; try{ localStorage.setItem(k,v); }catch(e){} }
+};
+
+/* ---------------- pouch content ---------------- */
+var POUCHES = {
+  green: {
+    name:"Personal hygiene",
+    desc:"Everything you keep on you for a clean, comfortable trip.",
+    listTitle:"Personal hygiene checklist",
+    items:["Toothbrush","Toothpaste","Wet wipes","Hand sanitiser","Tissue","Small comb","Soap sheets","Deodorant","Lip balm","Face towel"]
+  },
+  red: {
+    name:"Emergency kit",
+    desc:"First aid, medicine and the numbers you hope you never dial.",
+    listTitle:"Emergency and convenience checklist",
+    items:["Plasters and gauze","Antiseptic wipes","Medicine organiser","Emergency contact card","Tissue","Paracetamol","Motion sickness tablets","Oral rehydration salts","Face mask","Insurance card copy"]
+  },
+  blue: {
+    name:"Travel essentials",
+    desc:"The bits that keep your documents, cables and bags in order.",
+    listTitle:"Travel essentials checklist",
+    items:["Luggage tag","Passport holder","Pen","Cable organiser","Eco-bag","Power bank","Plug adapter","Copy of passport and visa","Boarding pass","Local currency and coin purse"]
+  }
+};
+
+/* ---------------- emergency numbers ---------------- */
+var DEST = {
+  af:{name:"Afghanistan", calls:[["Police","119"],["Ambulance","102"],["Fire","119"]], note:"Medical facilities can be limited depending on province."},
+  al:{name:"Albania", calls:[["Police","129"],["Ambulance","127"],["Fire","128"]], note:"112 also routes to local emergency services."},
+  dz:{name:"Algeria", calls:[["Police","1548"],["Ambulance","14"],["Fire","14"]], note:"17 connects to National Gendarmerie."},
+  ad:{name:"Andorra", calls:[["Police","110"],["Ambulance","116"],["Fire","118"]], note:"112 works nationwide from mobile phones."},
+  ao:{name:"Angola", calls:[["Police","113"],["Ambulance","112"],["Fire","115"]], note:"112 routes to emergency support."},
+  ag:{name:"Antigua and Barbuda", calls:[["Police","999"],["Ambulance","911"],["Fire","911"]], note:"Police can also be reached at 911."},
+  ar:{name:"Argentina", calls:[["Police","101"],["Ambulance","107"],["Fire","100"]], note:"911 works as a unified number in Buenos Aires."},
+  am:{name:"Armenia", calls:[["Police","102"],["Ambulance","103"],["Fire","101"]], note:"911 or 112 connects to the Emergency Channel."},
+  au:{name:"Australia", calls:[["Police","000"],["Ambulance","000"],["Fire","000"]], note:"112 works from mobile phones, even if locked."},
+  at:{name:"Austria", calls:[["Police","133"],["Ambulance","144"],["Fire","122"]], note:"112 is the universal European emergency line."},
+  az:{name:"Azerbaijan", calls:[["Police","102"],["Ambulance","103"],["Fire","101"]], note:"112 connects to the Ministry of Emergency Situations."},
+  bs:{name:"Bahamas", calls:[["Police","919"],["Ambulance","919"],["Fire","919"]], note:"911 also works from most mobile phones."},
+  bh:{name:"Bahrain", calls:[["Police","999"],["Ambulance","999"],["Fire","999"]], note:"999 covers all emergency dispatch."},
+  bd:{name:"Bangladesh", calls:[["Police","999"],["Ambulance","999"],["Fire","999"]], note:"999 is the national emergency help line."},
+  bb:{name:"Barbados", calls:[["Police","211"],["Ambulance","511"],["Fire","311"]], note:"Direct numbers for each specific agency."},
+  by:{name:"Belarus", calls:[["Police","102"],["Ambulance","103"],["Fire","101"]], note:"112 is available on all mobile networks."},
+  be:{name:"Belgium", calls:[["Police","101"],["Ambulance","112"],["Fire","112"]], note:"112 handles both fire and medical emergencies."},
+  bz:{name:"Belize", calls:[["Police","911"],["Ambulance","911"],["Fire","911"]], note:"911 handles unified emergency dispatch."},
+  bj:{name:"Benin", calls:[["Police","117"],["Ambulance","112"],["Fire","118"]], note:"117 reaches national police force."},
+  bt:{name:"Bhutan", calls:[["Police","113"],["Ambulance","112"],["Fire","110"]], note:"Direct numbers route to local headquarters."},
+  bo:{name:"Bolivia", calls:[["Police","110"],["Ambulance","118"],["Fire","119"]], note:"110 reaches Radio Patrulla police."},
+  ba:{name:"Bosnia and Herzegovina", calls:[["Police","122"],["Ambulance","124"],["Fire","123"]], note:"112 is active across mobile carriers."},
+  bw:{name:"Botswana", calls:[["Police","999"],["Ambulance","997"],["Fire","998"]], note:"997 connects directly to MRI emergency medical."},
+  br:{name:"Brazil", calls:[["Police","190"],["Ambulance","192"],["Fire","193"]], note:"192 connects to SAMU medical emergencies."},
+  bn:{name:"Brunei", calls:[["Police","993"],["Ambulance","991"],["Fire","995"]], note:"Keep specific service numbers ready."},
+  bg:{name:"Bulgaria", calls:[["Police","166"],["Ambulance","150"],["Fire","160"]], note:"112 is fully operational nationwide."},
+  bf:{name:"Burkina Faso", calls:[["Police","17"],["Ambulance","112"],["Fire","18"]], note:"18 reaches National Fire Brigade."},
+  bi:{name:"Burundi", calls:[["Police","117"],["Ambulance","112"],["Fire","118"]], note:"112 operates on cell networks."},
+  cv:{name:"Cabo Verde", calls:[["Police","132"],["Ambulance","130"],["Fire","131"]], note:"Direct lines work across islands."},
+  kh:{name:"Cambodia", calls:[["Police","117"],["Ambulance","119"],["Fire","118"]], note:"English support can be limited outside Phnom Penh."},
+  cm:{name:"Cameroon", calls:[["Police","117"],["Ambulance","112"],["Fire","118"]], note:"112 functions from mobile phones."},
+  ca:{name:"Canada", calls:[["Police","911"],["Ambulance","911"],["Fire","911"]], note:"911 covers all emergency services."},
+  cf:{name:"Central African Republic", calls:[["Police","117"],["Ambulance","1220"],["Fire","118"]], note:"Keep embassy contact details on hand."},
+  td:{name:"Chad", calls:[["Police","17"],["Ambulance","2251-2368"],["Fire","18"]], note:"Contact local medical centers directly when possible."},
+  cl:{name:"Chile", calls:[["Police","133"],["Ambulance","131"],["Fire","132"]], note:"Easy to remember: 133 (Carabineros), 132 (Bomberos), 131 (SAMU)."},
+  cn:{name:"China", calls:[["Police","110"],["Ambulance","120"],["Fire","119"]], note:"Operators speak Mandarin. Keep hotel details handy."},
+  co:{name:"Colombia", calls:[["Police","123"],["Ambulance","125"],["Fire","119"]], note:"123 is the national emergency line."},
+  km:{name:"Comoros", calls:[["Police","17"],["Ambulance","772-0373"],["Fire","18"]], note:"Direct hospital numbers recommended for urgent transport."},
+  cg:{name:"Congo (Republic of)", calls:[["Police","112"],["Ambulance","112"],["Fire","118"]], note:"112 connects to local dispatch services."},
+  cd:{name:"Congo (Democratic Republic)", calls:[["Police","112"],["Ambulance","112"],["Fire","118"]], note:"Service availability depends heavily on region."},
+  cr:{name:"Costa Rica", calls:[["Police","911"],["Ambulance","911"],["Fire","911"]], note:"911 is unified nationwide."},
+  hr:{name:"Croatia", calls:[["Police","192"],["Ambulance","194"],["Fire","193"]], note:"112 routes directly to emergency dispatch."},
+  cu:{name:"Cuba", calls:[["Police","106"],["Ambulance","104"],["Fire","105"]], note:"Keep direct numbers handy."},
+  cy:{name:"Cyprus", calls:[["Police","112"],["Ambulance","112"],["Fire","112"]], note:"112 or 199 works for all services."},
+  cz:{name:"Czech Republic", calls:[["Police","158"],["Ambulance","155"],["Fire","150"]], note:"112 operates in English and Czech."},
+  dk:{name:"Denmark", calls:[["Police","112"],["Ambulance","112"],["Fire","112"]], note:"112 covers all primary emergencies."},
+  dj:{name:"Djibouti", calls:[["Police","17"],["Ambulance","19"],["Fire","18"]], note:"Direct service lines operate in city center."},
+  dm:{name:"Dominica", calls:[["Police","999"],["Ambulance","999"],["Fire","999"]], note:"999 covers all emergency services."},
+  do:{name:"Dominican Republic", calls:[["Police","911"],["Ambulance","911"],["Fire","911"]], note:"911 works in most major metropolitan areas."},
+  tl:{name:"East Timor", calls:[["Police","112"],["Ambulance","110"],["Fire","115"]], note:"112 reaches national police dispatch."},
+  ec:{name:"Ecuador", calls:[["Police","911"],["Ambulance","911"],["Fire","911"]], note:"Integrated ECU 911 handles all dispatch."},
+  eg:{name:"Egypt", calls:[["Police","122"],["Ambulance","123"],["Fire","180"]], note:"Tourist police line is 126."},
+  sv:{name:"El Salvador", calls:[["Police","911"],["Ambulance","132"],["Fire","913"]], note:"132 links directly to the SAMU medical service."},
+  gq:{name:"Equatorial Guinea", calls:[["Police","113"],["Ambulance","115"],["Fire","114"]], note:"Local police route emergency calls."},
+  er:{name:"Eritrea", calls:[["Police","127"],["Ambulance","122"],["Fire","124"]], note:"Direct emergency numbers for Asmara region."},
+  ee:{name:"Estonia", calls:[["Police","112"],["Ambulance","112"],["Fire","112"]], note:"112 is the single emergency number."},
+  sz:{name:"Eswatini", calls:[["Police","999"],["Ambulance","977"],["Fire","933"]], note:"977 connects to emergency medical response."},
+  et:{name:"Ethiopia", calls:[["Police","991"],["Ambulance","907"],["Fire","939"]], note:"991 reaches Federal Police dispatch."},
+  fj:{name:"Fiji", calls:[["Police","917"],["Ambulance","911"],["Fire","910"]], note:"911 reaches national medical service."},
+  fi:{name:"Finland", calls:[["Police","112"],["Ambulance","112"],["Fire","112"]], note:"112 handles all emergency services."},
+  fr:{name:"France", calls:[["Police","17"],["Ambulance","15"],["Fire","18"]], note:"112 works free from any phone."},
+  ga:{name:"Gabon", calls:[["Police","1730"],["Ambulance","1300"],["Fire","18"]], note:"1730 reaches national police lines."},
+  gm:{name:"Gambia", calls:[["Police","117"],["Ambulance","116"],["Fire","118"]], note:"117 connects to Gambian Police Force."},
+  ge:{name:"Georgia", calls:[["Police","112"],["Ambulance","112"],["Fire","112"]], note:"112 is the unified operational center."},
+  de:{name:"Germany", calls:[["Police","110"],["Ambulance","112"],["Fire","112"]], note:"112 covers medical and fire, 110 for police."},
+  gh:{name:"Ghana", calls:[["Police","191"],["Ambulance","193"],["Fire","192"]], note:"112 is active as a unified backup number."},
+  gr:{name:"Greece", calls:[["Police","100"],["Ambulance","166"],["Fire","199"]], note:"112 provides multi-language emergency support."},
+  gd:{name:"Grenada", calls:[["Police","911"],["Ambulance","434"],["Fire","911"]], note:"Police dispatch coordinates fire response."},
+  gt:{name:"Guatemala", calls:[["Police","110"],["Ambulance","122"],["Fire","123"]], note:"122 connects to Volunteer Firefighters, 123 to Municipal."},
+  gn:{name:"Guinea", calls:[["Police","117"],["Ambulance","18"],["Fire","118"]], note:"Local hospital numbers recommended for health emergencies."},
+  gw:{name:"Guinea-Bissau", calls:[["Police","117"],["Ambulance","112"],["Fire","118"]], note:"112 connects via mobile networks."},
+  gy:{name:"Guyana", calls:[["Police","911"],["Ambulance","913"],["Fire","912"]], note:"Direct lines for each emergency sector."},
+  ht:{name:"Haiti", calls:[["Police","114"],["Ambulance","116"],["Fire","115"]], note:"Medical response can be limited; contact local embassy if needed."},
+  hn:{name:"Honduras", calls:[["Police","911"],["Ambulance","911"],["Fire","198"]], note:"911 handles unified emergency dispatch."},
+  hu:{name:"Hungary", calls:[["Police","107"],["Ambulance","104"],["Fire","105"]], note:"112 is active with English operators."},
+  is:{name:"Iceland", calls:[["Police","112"],["Ambulance","112"],["Fire","112"]], note:"112 is the sole national emergency line."},
+  in:{name:"India", calls:[["Police","112"],["Ambulance","102"],["Fire","101"]], note:"112 is the unified national emergency line."},
+  id:{name:"Indonesia", calls:[["Police","110"],["Ambulance","118"],["Fire","113"]], note:"112 is active in major metropolitan areas."},
+  ir:{name:"Iran", calls:[["Police","110"],["Ambulance","115"],["Fire","125"]], note:"110 reaches national police patrol."},
+  iq:{name:"Iraq", calls:[["Police","104"],["Ambulance","122"],["Fire","115"]], note:"Direct lines operate in urban centers."},
+  ie:{name:"Ireland", calls:[["Police","999"],["Ambulance","112"],["Fire","112"]], note:"Both 112 and 999 are fully functional."},
+  il:{name:"Israel", calls:[["Police","100"],["Ambulance","101"],["Fire","102"]], note:"101 reaches Magen David Adom medical response."},
+  it:{name:"Italy", calls:[["Police","113"],["Ambulance","118"],["Fire","115"]], note:"112 (Carabinieri) is the European universal line."},
+  ci:{name:"Ivory Coast", calls:[["Police","111"],["Ambulance","185"],["Fire","180"]], note:"111 connects to National Police response."},
+  jm:{name:"Jamaica", calls:[["Police","119"],["Ambulance","110"],["Fire","110"]], note:"110 covers both medical and fire."},
+  jp:{name:"Japan", calls:[["Police","110"],["Ambulance","119"],["Fire","119"]], note:"119 covers both medical and fire response."},
+  jo:{name:"Jordan", calls:[["Police","911"],["Ambulance","911"],["Fire","911"]], note:"911 is unified nationwide."},
+  kz:{name:"Kazakhstan", calls:[["Police","102"],["Ambulance","103"],["Fire","101"]], note:"112 connects to emergency rescue services."},
+  ke:{name:"Kenya", calls:[["Police","999"],["Ambulance","999"],["Fire","999"]], note:"112 and 911 also work from mobile phones."},
+  ki:{name:"Kiribati", calls:[["Police","192"],["Ambulance","194"],["Fire","193"]], note:"Direct dispatch numbers for South Tarawa."},
+  xk:{name:"Kosovo", calls:[["Police","192"],["Ambulance","194"],["Fire","193"]], note:"112 works on all cell phones."},
+  kw:{name:"Kuwait", calls:[["Police","112"],["Ambulance","112"],["Fire","112"]], note:"112 connects to central emergency services."},
+  kg:{name:"Kyrgyzstan", calls:[["Police","102"],["Ambulance","103"],["Fire","101"]], note:"112 works via cell towers."},
+  la:{name:"Laos", calls:[["Police","191"],["Ambulance","195"],["Fire","190"]], note:"Vientiane Rescue can also be reached directly."},
+  lv:{name:"Latvia", calls:[["Police","110"],["Ambulance","113"],["Fire","112"]], note:"112 connects to unified emergency dispatch."},
+  lb:{name:"Lebanon", calls:[["Police","112"],["Ambulance","140"],["Fire","175"]], note:"140 reaches Red Cross ambulance dispatch."},
+  ls:{name:"Lesotho", calls:[["Police","123"],["Ambulance","121"],["Fire","122"]], note:"Direct lines connect to Maseru dispatch."},
+  lr:{name:"Liberia", calls:[["Police","911"],["Ambulance","911"],["Fire","911"]], note:"911 is the central hotline."},
+  ly:{name:"Libya", calls:[["Police","1515"],["Ambulance","193"],["Fire","1515"]], note:"Medical infrastructure varies by area."},
+  li:{name:"Liechtenstein", calls:[["Police","117"],["Ambulance","144"],["Fire","118"]], note:"112 routes to regional emergency centers."},
+  lt:{name:"Lithuania", calls:[["Police","112"],["Ambulance","112"],["Fire","112"]], note:"112 is the single emergency standard."},
+  lu:{name:"Luxembourg", calls:[["Police","113"],["Ambulance","112"],["Fire","112"]], note:"112 connects directly to medical and fire response."},
+  mg:{name:"Madagascar", calls:[["Police","117"],["Ambulance","124"],["Fire","118"]], note:"117 reaches Police Nationale."},
+  mw:{name:"Malawi", calls:[["Police","997"],["Ambulance","998"],["Fire","999"]], note:"997 reaches Central Police Station."},
+  my:{name:"Malaysia", calls:[["Police","999"],["Ambulance","999"],["Fire","994"]], note:"112 routes from mobile carriers."},
+  mv:{name:"Maldives", calls:[["Police","119"],["Ambulance","102"],["Fire","118"]], note:"Resort staff can coordinate island transport."},
+  ml:{name:"Mali", calls:[["Police","17"],["Ambulance","15"],["Fire","18"]], note:"French-based standard emergency numbers."},
+  mt:{name:"Malta", calls:[["Police","112"],["Ambulance","112"],["Fire","112"]], note:"112 handles all emergency services."},
+  mh:{name:"Marshall Islands", calls:[["Police","625-8666"],["Ambulance","625-4144"],["Fire","625-8666"]], note:"Majuro emergency response numbers."},
+  mr:{name:"Mauritania", calls:[["Police","117"],["Ambulance","101"],["Fire","118"]], note:"117 connects to Gendarmerie."},
+  mu:{name:"Mauritius", calls:[["Police","999"],["Ambulance","114"],["Fire","115"]], note:"112 works on all mobile networks."},
+  mx:{name:"Mexico", calls:[["Police","911"],["Ambulance","911"],["Fire","911"]], note:"911 is the national standard."},
+  fm:{name:"Micronesia", calls:[["Police","911"],["Ambulance","911"],["Fire","911"]], note:"911 is functional across state islands."},
+  md:{name:"Moldova", calls:[["Police","112"],["Ambulance","112"],["Fire","112"]], note:"112 is integrated across all sectors."},
+  mc:{name:"Monaco", calls:[["Police","17"],["Ambulance","18"],["Fire","18"]], note:"112 is supported on mobile networks."},
+  mn:{name:"Mongolia", calls:[["Police","102"],["Ambulance","103"],["Fire","101"]], note:"105 covers general rescue services."},
+  me:{name:"Montenegro", calls:[["Police","122"],["Ambulance","124"],["Fire","123"]], note:"112 routes to emergency dispatch."},
+  ma:{name:"Morocco", calls:[["Police","190"],["Ambulance","150"],["Fire","150"]], note:"112 routes from mobile carriers."},
+  mz:{name:"Mozambique", calls:[["Police","112"],["Ambulance","117"],["Fire","198"]], note:"112 routes through central police dispatch."},
+  mm:{name:"Myanmar", calls:[["Police","199"],["Ambulance","192"],["Fire","191"]], note:"Direct numbers operate in main city hubs."},
+  na:{name:"Namibia", calls:[["Police","10111"],["Ambulance","211111"],["Fire","203511"]], note:"10111 reaches national police service."},
+  nr:{name:"Nauru", calls:[["Police","110"],["Ambulance","111"],["Fire","112"]], note:"Direct local service connections."},
+  np:{name:"Nepal", calls:[["Police","100"],["Ambulance","102"],["Fire","101"]], note:"102 connects to ambulance association."},
+  nl:{name:"Netherlands", calls:[["Police","112"],["Ambulance","112"],["Fire","112"]], note:"112 is the main number. Non-emergency police: 0900-8844."},
+  nz:{name:"New Zealand", calls:[["Police","111"],["Ambulance","111"],["Fire","111"]], note:"Specify required service upon call connection."},
+  ni:{name:"Nicaragua", calls:[["Police","118"],["Ambulance","128"],["Fire","115"]], note:"Red Cross ambulance is reached via 128."},
+  ne:{name:"Niger", calls:[["Police","17"],["Ambulance","15"],["Fire","18"]], note:"Standard French-system emergency lines."},
+  ng:{name:"Nigeria", calls:[["Police","112"],["Ambulance","112"],["Fire","112"]], note:"112 connects to National Emergency Management."},
+  mk:{name:"North Macedonia", calls:[["Police","192"],["Ambulance","194"],["Fire","193"]], note:"112 is active for cell network users."},
+  no:{name:"Norway", calls:[["Police","112"],["Ambulance","113"],["Fire","110"]], note:"Direct numbers: 112 (Police), 113 (Medical), 110 (Fire)."},
+  om:{name:"Oman", calls:[["Police","9999"],["Ambulance","9999"],["Fire","9999"]], note:"9999 routes to Royal Oman Police dispatch."},
+  pk:{name:"Pakistan", calls:[["Police","15"],["Ambulance","1122"],["Fire","16"]], note:"1122 connects to Rescue service in major provinces."},
+  pw:{name:"Palau", calls:[["Police","911"],["Ambulance","911"],["Fire","911"]], note:"911 serves all island emergency requests."},
+  ps:{name:"Palestine", calls:[["Police","100"],["Ambulance","101"],["Fire","102"]], note:"101 routes to Red Crescent emergency services."},
+  pa:{name:"Panama", calls:[["Police","104"],["Ambulance","911"],["Fire","103"]], note:"911 connects directly to SUME medical services."},
+  pg:{name:"Papua New Guinea", calls:[["Police","000"],["Ambulance","111"],["Fire","110"]], note:"111 connects to St John Ambulance response."},
+  py:{name:"Paraguay", calls:[["Police","911"],["Ambulance","141"],["Fire","132"]], note:"911 routes to national police response."},
+  pe:{name:"Peru", calls:[["Police","105"],["Ambulance","106"],["Fire","116"]], note:"911 is also active in major urban areas."},
+  ph:{name:"Philippines", calls:[["Police","911"],["Ambulance","911"],["Fire","911"]], note:"Red Cross hotline is 143."},
+  pl:{name:"Poland", calls:[["Police","997"],["Ambulance","999"],["Fire","998"]], note:"112 works nationwide and routes to dispatch."},
+  pt:{name:"Portugal", calls:[["Police","112"],["Ambulance","112"],["Fire","112"]], note:"112 covers all national emergencies."},
+  qa:{name:"Qatar", calls:[["Police","999"],["Ambulance","999"],["Fire","999"]], note:"Operators speak Arabic and English."},
+  ro:{name:"Romania", calls:[["Police","112"],["Ambulance","112"],["Fire","112"]], note:"112 is the unified national line."},
+  ru:{name:"Russia", calls:[["Police","102"],["Ambulance","103"],["Fire","101"]], note:"112 works on all mobile carriers."},
+  rw:{name:"Rwanda", calls:[["Police","112"],["Ambulance","912"],["Fire","111"]], note:"112 routes to national police dispatch."},
+  kn:{name:"Saint Kitts and Nevis", calls:[["Police","911"],["Ambulance","911"],["Fire","333"]], note:"911 routes to police and ambulance."},
+  lc:{name:"Saint Lucia", calls:[["Police","999"],["Ambulance","911"],["Fire","911"]], note:"911 handles medical and fire emergencies."},
+  vc:{name:"Saint Vincent and the Grenadines", calls:[["Police","999"],["Ambulance","999"],["Fire","999"]], note:"911 also works on local mobile networks."},
+  ws:{name:"Samoa", calls:[["Police","995"],["Ambulance","996"],["Fire","994"]], note:"996 reaches main hospital ambulance line."},
+  sm:{name:"San Marino", calls:[["Police","112"],["Ambulance","118"],["Fire","115"]], note:"112 routes to the Gendarmerie."},
+  st:{name:"Sao Tome and Principe", calls:[["Police","222222"],["Ambulance","112"],["Fire","112"]], note:"112 connects to local emergency services."},
+  sa:{name:"Saudi Arabia", calls:[["Police","999"],["Ambulance","997"],["Fire","998"]], note:"911 is active in major provinces."},
+  sn:{name:"Senegal", calls:[["Police","17"],["Ambulance","15"],["Fire","18"]], note:"15 reaches SAMU medical assistance."},
+  rs:{name:"Serbia", calls:[["Police","192"],["Ambulance","194"],["Fire","193"]], note:"112 is active for mobile calls."},
+  sc:{name:"Seychelles", calls:[["Police","999"],["Ambulance","151"],["Fire","999"]], note:"112 works from cellular phones."},
+  sl:{name:"Sierra Leone", calls:[["Police","019"],["Ambulance","117"],["Fire","019"]], note:"117 reaches national medical dispatch."},
+  sg:{name:"Singapore", calls:[["Police","999"],["Ambulance","995"],["Fire","995"]], note:"995 covers medical and fire emergencies."},
+  sk:{name:"Slovakia", calls:[["Police","158"],["Ambulance","155"],["Fire","150"]], note:"112 is supported nationwide."},
+  si:{name:"Slovenia", calls:[["Police","113"],["Ambulance","112"],["Fire","112"]], note:"112 handles medical and fire services."},
+  sb:{name:"Solomon Islands", calls:[["Police","999"],["Ambulance","911"],["Fire","988"]], note:"999 connects directly to Central Police."},
+  so:{name:"Somalia", calls:[["Police","888"],["Ambulance","999"],["Fire","555"]], note:"Private ambulance lines operate in Mogadishu."},
+  za:{name:"South Africa", calls:[["Police","10111"],["Ambulance","10177"],["Fire","10177"]], note:"112 works from all mobile networks."},
+  kr:{name:"South Korea", calls:[["Police","112"],["Ambulance","119"],["Fire","119"]], note:"1330 gives 24-hour foreign language support."},
+  ss:{name:"South Sudan", calls:[["Police","777"],["Ambulance","999"],["Fire","999"]], note:"777 routes to emergency police response."},
+  es:{name:"Spain", calls:[["Police","091"],["Ambulance","061"],["Fire","080"]], note:"112 works nationwide in multiple languages."},
+  lk:{name:"Sri Lanka", calls:[["Police","119"],["Ambulance","1990"],["Fire","110"]], note:"1990 connects to Suwa Seriya free ambulance service."},
+  sd:{name:"Sudan", calls:[["Police","999"],["Ambulance","999"],["Fire","999"]], note:"999 reaches emergency communications."},
+  sr:{name:"Suriname", calls:[["Police","115"],["Ambulance","112"],["Fire","110"]], note:"Police dispatch can assist with medical routing."},
+  se:{name:"Sweden", calls:[["Police","112"],["Ambulance","112"],["Fire","112"]], note:"112 handles all emergency services."},
+  ch:{name:"Switzerland", calls:[["Police","117"],["Ambulance","144"],["Fire","118"]], note:"112 works on all mobile networks."},
+  sy:{name:"Syria", calls:[["Police","112"],["Ambulance","110"],["Fire","113"]], note:"Local emergency response availability varies."},
+  tw:{name:"Taiwan", calls:[["Police","110"],["Ambulance","119"],["Fire","119"]], note:"0800-024-111 offers English travel assistance."},
+  tj:{name:"Tajikistan", calls:[["Police","102"],["Ambulance","103"],["Fire","101"]], note:"112 routes to civil defense dispatch."},
+  tz:{name:"Tanzania", calls:[["Police","112"],["Ambulance","114"],["Fire","115"]], note:"112 is the primary mobile hotline."},
+  th:{name:"Thailand", calls:[["Police","191"],["Ambulance","1669"],["Fire","199"]], note:"Tourist police line with English support is 1155."},
+  tg:{name:"Togo", calls:[["Police","117"],["Ambulance","8200"],["Fire","118"]], note:"117 reaches National Police line."},
+  to:{name:"Tonga", calls:[["Police","922"],["Ambulance","933"],["Fire","999"]], note:"933 reaches Vaiola Hospital dispatch."},
+  tt:{name:"Trinidad and Tobago", calls:[["Police","999"],["Ambulance","811"],["Fire","990"]], note:"Direct dispatch lines for each emergency service."},
+  tn:{name:"Tunisia", calls:[["Police","197"],["Ambulance","190"],["Fire","198"]], note:"190 connects directly to SAMU medical response."},
+  tr:{name:"Turkey", calls:[["Police","112"],["Ambulance","112"],["Fire","112"]], note:"112 is the consolidated emergency hotline."},
+  tm:{name:"Turkmenistan", calls:[["Police","102"],["Ambulance","103"],["Fire","101"]], note:"Direct numbers for local response hubs."},
+  tv:{name:"Tuvalu", calls:[["Police","911"],["Ambulance","911"],["Fire","911"]], note:"911 handles central emergency dispatch."},
+  ug:{name:"Uganda", calls:[["Police","999"],["Ambulance","911"],["Fire","112"]], note:"999 works on landlines; 112 on mobile phones."},
+  ua:{name:"Ukraine", calls:[["Police","102"],["Ambulance","103"],["Fire","101"]], note:"112 unified service is operational in major regions."},
+  ae:{name:"United Arab Emirates", calls:[["Police","999"],["Ambulance","998"],["Fire","997"]], note:"Dubai tourist police hotline is 800-4438."},
+  uk:{name:"United Kingdom", calls:[["Police","999"],["Ambulance","999"],["Fire","999"]], note:"112 also works. Non-emergency police: 101."},
+  us:{name:"United States", calls:[["Police","911"],["Ambulance","911"],["Fire","911"]], note:"911 covers all emergency services."},
+  uy:{name:"Uruguay", calls:[["Police","911"],["Ambulance","105"],["Fire","104"]], note:"911 is the central emergency entry point."},
+  uz:{name:"Uzbekistan", calls:[["Police","102"],["Ambulance","103"],["Fire","101"]], note:"112 is available on modern mobile networks."},
+  vu:{name:"Vanuatu", calls:[["Police","111"],["Ambulance","112"],["Fire","113"]], note:"112 reaches central hospital dispatch."},
+  va:{name:"Vatican City", calls:[["Police","112"],["Ambulance","118"],["Fire","115"]], note:"Uses Italian emergency services network."},
+  ve:{name:"Venezuela", calls:[["Police","911"],["Ambulance","911"],["Fire","911"]], note:"171 also functions in certain states."},
+  vn:{name:"Vietnam", calls:[["Police","113"],["Ambulance","115"],["Fire","114"]], note:"Ask hotel personnel to assist if English is limited."},
+  ye:{name:"Yemen", calls:[["Police","199"],["Ambulance","191"],["Fire","191"]], note:"Services can be irregular outside main towns."},
+  zm:{name:"Zambia", calls:[["Police","991"],["Ambulance","992"],["Fire","993"]], note:"112 functions across cell providers."},
+  zw:{name:"Zimbabwe", calls:[["Police","995"],["Ambulance","994"],["Fire","993"]], note:"999 works as central dispatch from landlines."},
+
+};
+
+/* ---------------- state ---------------- */
+var current = "green";
+var els = {
+  list:document.getElementById("list"), count:document.getElementById("count"),
+  bar:document.getElementById("barFill"), calls:document.getElementById("calls"),
+  dest:document.getElementById("dest"), note:document.getElementById("destNote"),
+  notes:document.getElementById("notes"), contactCalls:document.getElementById("contactCalls"),
+  saved:document.getElementById("saved")
+};
+
+function key(k){ return "pouch:"+current+":"+k; }
+function readJSON(k, fallback){
+  var raw = store.get(k);
+  if(!raw) return fallback;
+  try{ return JSON.parse(raw); }catch(e){ return fallback; }
+}
+function flash(msg){
+  els.saved.textContent = msg;
+  clearTimeout(flash.t);
+  flash.t = setTimeout(function(){ els.saved.textContent = ""; }, 1600);
+}
+
+/* ---------------- checklist ---------------- */
+function getItems(){
+  var saved = readJSON(key("items"), null);
+  if(saved && saved.length!==undefined) return saved;
+  return POUCHES[current].items.map(function(t){ return {t:t, d:false}; });
+}
+function setItems(items){ store.set(key("items"), JSON.stringify(items)); }
+
+function renderList(){
+  var items = getItems();
+  els.list.innerHTML = "";
+  items.forEach(function(it, i){
+    var li = document.createElement("li");
+    li.className = "item" + (it.d ? " done" : "");
+
+    var box = document.createElement("button");
+    box.className = "box";
+    box.setAttribute("aria-pressed", it.d ? "true" : "false");
+    box.setAttribute("aria-label", (it.d?"Untick ":"Tick ")+it.t);
+    box.innerHTML = '<svg viewBox="0 0 24 24"><polyline points="4,13 9,18 20,6"/></svg>';
+
+    var label = document.createElement("span");
+    label.className = "label";
+    label.textContent = it.t;
+
+    var del = document.createElement("button");
+    del.className = "x";
+    del.innerHTML = "&times;";
+    del.setAttribute("aria-label", "Remove "+it.t);
+
+    function toggle(){
+      var arr = getItems(); arr[i].d = !arr[i].d; setItems(arr); renderList();
+    }
+    box.addEventListener("click", toggle);
+    label.addEventListener("click", toggle);
+    del.addEventListener("click", function(){
+      var arr = getItems(); arr.splice(i,1); setItems(arr); renderList();
+    });
+
+    li.appendChild(box); li.appendChild(label); li.appendChild(del);
+    els.list.appendChild(li);
+  });
+
+  var done = items.filter(function(i){ return i.d; }).length;
+  els.count.textContent = done + " of " + items.length + " packed";
+  els.bar.style.width = items.length ? (done/items.length*100)+"%" : "0%";
+}
+
+document.getElementById("addItem").addEventListener("click", addItem);
+document.getElementById("newItem").addEventListener("keydown", function(e){ if(e.key==="Enter") addItem(); });
+function addItem(){
+  var input = document.getElementById("newItem");
+  var v = input.value.trim();
+  if(!v) return;
+  var arr = getItems(); arr.push({t:v, d:false}); setItems(arr);
+  input.value = ""; renderList();
+}
+document.getElementById("reset").addEventListener("click", function(){
+  var arr = getItems().map(function(i){ i.d = false; return i; });
+  setItems(arr); renderList();
+});
+
+/* ---------------- destination ---------------- */
+Object.keys(DEST).forEach(function(k){
+  var o = document.createElement("option");
+  o.value = k; o.textContent = DEST[k].name;
+  els.dest.appendChild(o);
+});
+function renderCalls(){
+  var d = DEST[els.dest.value] || DEST.other;
+  els.calls.innerHTML = "";
+  d.calls.forEach(function(c){
+    var li = document.createElement("li");
+    var a = document.createElement("a");
+    a.href = "tel:" + c[1].replace(/[^0-9+]/g,"");
+    a.innerHTML = '<span><span class="who">'+c[0]+'</span><span class="what">Tap to call</span></span>' +
+                  '<span class="num">'+c[1]+'</span>';
+    li.appendChild(a);
+    els.calls.appendChild(li);
+  });
+  els.note.textContent = d.note;
+}
+els.dest.addEventListener("change", function(){
+  store.set("pouch:dest", els.dest.value);
+  renderCalls();
+  flash("Destination saved");
+});
+
+/* ---------------- personal contacts (shared across pouches) ---------------- */
+function getContacts(){ return readJSON("pouch:contacts", []); }
+function renderContacts(){
+  var cs = getContacts();
+  els.contactCalls.innerHTML = "";
+  cs.forEach(function(c, i){
+    var li = document.createElement("li");
+    li.style.display = "flex"; li.style.alignItems = "center"; li.style.gap = ".3rem";
+    var a = document.createElement("a");
+    a.href = "tel:" + c.n.replace(/[^0-9+]/g,"");
+    a.style.flex = "1";
+    a.innerHTML = '<span><span class="who">'+c.name+'</span><span class="what">Tap to call</span></span>' +
+                  '<span class="num" style="font-size:1.125rem">'+c.n+'</span>';
+    var del = document.createElement("button");
+    del.className = "x"; del.innerHTML = "&times;";
+    del.setAttribute("aria-label","Remove "+c.name);
+    del.addEventListener("click", function(e){
+      e.preventDefault();
+      var arr = getContacts(); arr.splice(i,1);
+      store.set("pouch:contacts", JSON.stringify(arr)); renderContacts();
+    });
+    li.appendChild(a); li.appendChild(del);
+    els.contactCalls.appendChild(li);
+  });
+}
+document.getElementById("addContact").addEventListener("click", function(){
+  var n = document.getElementById("cName"), t = document.getElementById("cNum");
+  if(!n.value.trim() || !t.value.trim()) { flash("Add both a name and a number"); return; }
+  var arr = getContacts();
+  arr.push({name:n.value.trim(), n:t.value.trim()});
+  store.set("pouch:contacts", JSON.stringify(arr));
+  n.value = ""; t.value = ""; renderContacts(); flash("Contact saved");
+});
+
+/* ---------------- notes ---------------- */
+var noteTimer;
+els.notes.addEventListener("input", function(){
+  clearTimeout(noteTimer);
+  noteTimer = setTimeout(function(){
+    store.set(key("notes"), els.notes.value);
+    flash("Notes saved");
+  }, 400);
+});
+
+/* ---------------- routing ---------------- */
+function setPouch(k){
+  if(!POUCHES[k]) k = "green";
+  current = k;
+  var p = POUCHES[k];
+  document.body.setAttribute("data-pouch", k);
+  document.getElementById("pouchName").textContent = p.name;
+  document.getElementById("pouchDesc").textContent = p.desc;
+  document.getElementById("listTitle").textContent = p.listTitle;
+  document.title = p.name + " — Pouch Checklist";
+  els.notes.value = store.get(key("notes")) || "";
+  renderList();
+}
+
+/* ---------------- boot ---------------- */
+els.dest.value = store.get("pouch:dest") || "jp";
+renderCalls();
+renderContacts();
+setPouch("green");
+</script>
+</body>
+</html>
